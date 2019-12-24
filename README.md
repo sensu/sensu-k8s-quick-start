@@ -8,7 +8,8 @@ configuration to reuse Nagios-style monitoring checks to monitor the example
 application using Sensu Go (including a Sensu sidecar in the example application
 deployment).
 
-_NOTE: this guide is a work in progress; see #TODO for more information._
+_NOTE: this guide is a work in progress; see [#TODO](#todo) for more
+information._
 
 ## Setup
 
@@ -102,7 +103,7 @@ _NOTE: this guide is a work in progress; see #TODO for more information._
 
    Now visit your Sensu dashboard to see the results!
 
-   [4]: https://docs.sensu.io/sensu-go/latest/reference/assets/ 
+   [4]: https://docs.sensu.io/sensu-go/latest/reference/assets/
 
 ## Roll your own Sensu Agent sidecar containers
 
