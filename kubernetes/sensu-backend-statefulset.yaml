@@ -1,0 +1,95 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sensu-backend
+  namespace: sensu-system
+spec:
+  selector:
+    matchLabels:
+      app: sensu
+  serviceName: sensu
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - metadata:
+      name: sensu-backend-etcd
+    spec:
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: 20Gi
+  template:
+    metadata:
+      labels:
+        app: sensu
+    spec:
+      volumes:
+      - name: sensu-backend-etcd
+        persistentVolumeClaim:
+          claimName: sensu-backend-etcd
+      - name: sensu-ssl
+        secret:
+          secretName: sensu-ssl
+          defaultMode: 256
+          optional: true
+      containers:
+      - name: sensu-backend
+        image: sensu/sensu:5.16.1
+        command: [
+          "/opt/sensu/bin/sensu-backend", "start",
+          "--log-level=debug",
+          "--cache-dir=/var/cache/sensu/sensu-backend",
+          "--state-dir=/var/lib/sensu",
+          "--etcd-name", "$(POD_NAME)",
+          "--etcd-initial-advertise-peer-urls", "http://$(POD_NAME).sensu.sensu-system.svc.cluster.local:2380",
+          "--etcd-advertise-client-urls", "http://$(POD_NAME).sensu.sensu-system.svc.cluster.local:2379",
+          "--etcd-listen-peer-urls", "http://0.0.0.0:2380",
+          "--etcd-listen-client-urls", "http://0.0.0.0:2379",
+          "--etcd-initial-cluster-token", "",
+          "--etcd-initial-cluster-state", "new",
+          "--etcd-initial-cluster", "sensu-backend-0=http://sensu-backend-0.sensu.sensu-system.svc.cluster.local:2380,sensu-backend-1=http://sensu-backend-1.sensu.sensu-system.svc.cluster.local:2380,sensu-backend-2=http://sensu-backend-2.sensu.sensu-system.svc.cluster.local:2380"
+        ]
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: SENSU_BACKEND_CLUSTER_ADMIN_USERNAME
+          value: admin
+        - name: SENSU_BACKEND_CLUSTER_ADMIN_PASSWORD
+          value: admin
+        ports:
+        - protocol: TCP
+          containerPort: 8080
+        - protocol: TCP
+          containerPort: 8081
+        - protocol: TCP
+          containerPort: 3000
+        volumeMounts:
+        - name: sensu-backend-etcd
+          mountPath: /var/lib/sensu/etcd
+        # resources:
+        #   requests:
+        #     memory: 2048M
+        #     cpu: 1.0
+        #   limits:
+        #     memory: 4096M
+        #     cpu: 2.0
+
+      - name: sensu-agent
+        image: sensu/sensu:5.16.1
+        command: ["/opt/sensu/bin/sensu-agent", "start", "--log-level=debug", "--insecure-skip-tls-verify"]
+        env:
+        - name: SENSU_BACKEND_URL
+          value: wss://sensu-backend-0.sensu.sensu-system.svc.cluster.local:8081 wss://sensu-backend-1.sensu.sensu-system.svc.cluster.local:8081 wss://sensu-backend-2.sensu.sensu-system.svc.cluster.local:8081
+        - name: SENSU_NAMESPACE
+          value: sensu-system
+        - name: SENSU_SUBSCRIPTIONS
+          value: linux kubernetes sensu-backend
+        - name: SENSU_DEREGISTER
+          value: "true"
+        - name: SENSU_STATSD_EVENT_HANDLERS
+          value: statsd

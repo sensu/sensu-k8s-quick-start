@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  selector:
+    app: nginx
+  type: LoadBalancer
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8888
+    targetPort: 80
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |
+    events {
+        worker_connections  1024;
+    }
+
+    http {
+        server {
+            root /usr/share/nginx/html;
+
+            location / {
+                autoindex   on;
+                sendfile    on;
+                sendfile_max_chunk  1m;
+            }
+
+            location /assets/ {
+                autoindex   on;
+                sendfile    on;
+                sendfile_max_chunk  1m;
+            }
+        }
+    }
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 2
+  template:
+    metadata:
+      name: nginx
+      labels:
+        app: nginx
+    spec:
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-config
+          optional: true
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - protocol: TCP
+          containerPort: 80
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+      - name: sensu-agent
+        image: sensu/sensu:5.16.1
+        command: ["/opt/sensu/bin/sensu-agent", "start", "--log-level", "debug"]
+        env:
+          - name: SENSU_BACKEND_URL
+            value: ws://sensu-backend-0.sensu.sensu-system.svc.cluster.local:8081 ws://sensu-backend-1.sensu.sensu-system.svc.cluster.local:8081 ws://sensu-backend-2.sensu.sensu-system.svc.cluster.local:8081
+          - name: SENSU_NAMESPACE
+            value: default
+          - name: SENSU_SUBSCRIPTIONS
+            value: nginx
+          - name: SENSU_KEEPALIVE_INTERVAL
+            value: "5"
+          - name: SENSU_KEEPALIVE_TIMEOUT
+            value: "10"
+          - name: SENSU_DEREGISTER
+            value: "true"
+          - name: SENSU_STATSD_EVENT_HANDLERS
+            value: statsd

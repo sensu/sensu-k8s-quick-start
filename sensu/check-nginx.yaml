@@ -1,0 +1,14 @@
+---
+type: CheckConfig
+api_version: core/v2
+metadata:
+  name: check-nginx
+spec:
+  command: check_http -H 127.0.0.1 -u / -P 80 -N
+  runtime_assets:
+  - sensu/monitoring-plugins
+  publish: true
+  subscriptions:
+  - nginx
+  interval: 10
+  timeout: 10
