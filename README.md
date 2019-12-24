@@ -154,3 +154,13 @@ information._
    registry documentation on how to proceed.
 
    [5]: https://hub.docker.com/r/sensu/sensu/
+
+## TODO
+
+This guide is a work in progress. It will be updated with the following
+instructions:
+
+- [ ] How to package Nagios Perl scripts/plugins as Sensu Assets
+- [ ] How to package Nagios Python scripts/plugins as Sensu Assets
+- [ ] How to "self host" custom assets using NGINX
+- [ ] How to configure your first Sensu Handler (e.g. PagerDuty) 
