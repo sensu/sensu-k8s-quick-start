@@ -70,4 +70,4 @@ else
 fi
 
 # execute the desired start command (passthrough all positional arguments as a command)
-exec $@
+exec "$@"

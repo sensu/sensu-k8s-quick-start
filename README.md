@@ -194,7 +194,13 @@ Kubernetes Secret or Kubernetes ConfigMap.
    ```
 
 Once installed, you may also need to run a certificate update command to update
-the CA trust store. This process differs from platform to platform.
+the CA trust store. This process differs from platform to platform (see below
+for more information).
+
+_NOTE: it may be possible to automate this process using a [Docker
+ENTRYPOINT][6] such as the attached `entrypoint.sh` (experimental)._
+
+[6]: https://docs.docker.com/engine/reference/builder/#entrypoint
 
 #### Alpine Linux
 
@@ -229,4 +235,4 @@ instructions:
 - [ ] How to "self host" custom assets using NGINX
 - [ ] How to configure your first Sensu Handler (e.g. PagerDuty)
 - [ ] How to install custom CA certificates (volume mount Kubernetes Secret);
-      see `entrypoint.sh` (WIP)
+      see `entrypoint.sh` (experimental)
