@@ -30,9 +30,9 @@ spec:
       - name: sensu-backend-etcd
         persistentVolumeClaim:
           claimName: sensu-backend-etcd
-      - name: sensu-ssl
+      - name: sensu-asset-server-ca-cert
         secret:
-          secretName: sensu-ssl
+          secretName: sensu-asset-server-ca-cert
           defaultMode: 256
           optional: true
       containers:
@@ -60,7 +60,7 @@ spec:
         - name: SENSU_BACKEND_CLUSTER_ADMIN_USERNAME
           value: admin
         - name: SENSU_BACKEND_CLUSTER_ADMIN_PASSWORD
-          value: admin
+          value: P@ssw0rd!
         ports:
         - protocol: TCP
           containerPort: 8080
@@ -71,13 +71,19 @@ spec:
         volumeMounts:
         - name: sensu-backend-etcd
           mountPath: /var/lib/sensu/etcd
-        # resources:
-        #   requests:
-        #     memory: 2048M
-        #     cpu: 1.0
-        #   limits:
-        #     memory: 4096M
-        #     cpu: 2.0
+        - name: sensu-asset-server-ca-cert
+          mountPath: /etc/pki/ca-trust/source/anchors/sensu-ca-cert.pem # centos
+          subPath: sensu-ca-cert
+        - name: sensu-asset-server-ca-cert
+          mountPath: /usr/local/share/ca-certificates/sensu-ca-cert.crt # alpine/debian
+          subPath: sensu-ca-cert
+        resources:
+          requests:
+            memory: 2048M
+            cpu: 1.0
+          limits:
+            memory: 4096M
+            cpu: 2.0
 
       - name: sensu-agent
         image: sensu/sensu:5.16.1
@@ -89,7 +95,22 @@ spec:
           value: sensu-system
         - name: SENSU_SUBSCRIPTIONS
           value: linux kubernetes sensu-backend
+        - name: SENSU_KEEPALIVE_INTERVAL
+          value: "5"
+        - name: SENSU_KEEPALIVE_WARNING_TIMEOUT
+          value: "10"
+        - name: SENSU_KEEPALIVE_CRITICAL_TIMEOUT
+          value: "60"
         - name: SENSU_DEREGISTER
           value: "true"
         - name: SENSU_STATSD_EVENT_HANDLERS
           value: statsd
+        volumeMounts:
+        - name: sensu-backend-etcd
+          mountPath: /var/lib/sensu/etcd
+        - name: sensu-asset-server-ca-cert
+          mountPath: /etc/pki/ca-trust/source/anchors/sensu-ca-cert.pem # centos
+          subPath: sensu-ca-cert
+        - name: sensu-asset-server-ca-cert
+          mountPath: /usr/local/share/ca-certificates/sensu-ca-cert.crt # alpine/debian
+          subPath: sensu-ca-cert

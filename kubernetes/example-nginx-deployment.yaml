@@ -60,6 +60,11 @@ spec:
         configMap:
           name: nginx-config
           optional: true
+      - name: sensu-asset-server-ca-cert
+        secret:
+          secretName: sensu-asset-server-ca-cert
+          defaultMode: 256
+          optional: true
       containers:
       - name: nginx
         image: nginx:latest
@@ -82,9 +87,18 @@ spec:
             value: nginx
           - name: SENSU_KEEPALIVE_INTERVAL
             value: "5"
-          - name: SENSU_KEEPALIVE_TIMEOUT
+          - name: SENSU_KEEPALIVE_WARNING_TIMEOUT
             value: "10"
+          - name: SENSU_KEEPALIVE_CRITICAL_TIMEOUT
+            value: "60"
           - name: SENSU_DEREGISTER
             value: "true"
           - name: SENSU_STATSD_EVENT_HANDLERS
             value: statsd
+        volumeMounts:
+        - name: sensu-asset-server-ca-cert
+          mountPath: /etc/pki/ca-trust/source/anchors/sensu-ca-cert.pem # centos
+          subPath: sensu-ca-cert.pem
+        - name: sensu-asset-server-ca-cert
+          mountPath: /usr/local/share/ca-certificates/sensu-ca-cert.crt # alpine/debian
+          subPath: sensu-ca-cert

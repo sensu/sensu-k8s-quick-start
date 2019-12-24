@@ -66,6 +66,7 @@ if OS=$(which_linux_distro); then
   fi
 else
   echo "ERROR: unknown Linux distribution (supported platforms: alpine debian centos redhat)"
+  exit 2
 fi
 
 # execute the desired start command (passthrough all positional arguments as a command)

@@ -155,6 +155,70 @@ information._
 
    [5]: https://hub.docker.com/r/sensu/sensu/
 
+## Troubleshooting
+
+### Install custom CA certificates for private Sensu Asset servers
+
+If you are hosting Sensu Assets behind your firewall, you may see an error like
+the following – indicating that the host is using a custom SSL certificate, but
+the Sensu Agent host (or container in this case) does not have the CA
+certificate installed in the host system CA trust store.
+
+```
+error getting assets for event: error fetching asset: Get https://artifactory.my-company.com/sensu-assets/check-plugins.tar.gz: x509: certificate signed by unknown authority
+```
+
+There are a few way to accomplish this in a Kubernetes environment – you can
+either pre-install the certificate in a custom Docker image by modifying your
+`Dockerfile` (see above), or you can mount the CA certificate file(s) using a
+Kubernetes Secret or Kubernetes ConfigMap.
+
+1. **Create a Kubernetes ConfigMap from a CA certificate (e.g. .pem file).**
+
+   ```shell
+   $ kubectl create secret generic sensu-asset-server-ca-cert --from-file=path/to/sensu-ca-cert.pem
+   ```
+
+2. **Modify the Sensu Agent sidecar config.**
+
+   Update your Sensu Agent sidecar with the following configuration details:
+
+   ```yaml
+   volumeMounts:
+   - name: sensu-asset-server-ca-cert
+     mountPath: /etc/pki/ca-trust/source/anchors/sensu-ca-cert.pem # centos
+     subPath: sensu-ca-cert.pem
+   - name: sensu-asset-server-ca-cert
+     mountPath: /usr/local/share/ca-certificates/sensu-ca-cert.crt # alpine/debian
+     subPath: sensu-ca-cert.crt
+   ```
+
+Once installed, you may also need to run a certificate update command to update
+the CA trust store. This process differs from platform to platform.
+
+#### Alpine Linux
+
+Custom CA certificates can be installed on Alpine Linux by adding the
+certificate file(s) in question to `/usr/local/share/ca-certificates/*.crt` and
+running `update-ca-certificates` (NOTE: this requires the `ca-certificates`
+package to be installed, and the certificate files must use the `.crt` file
+extension).
+
+#### Centos 6/7
+
+Custom CA certificates can be installed on Centos 6/7 by adding the certificate
+file(s) in question to `/etc/pki/ca-trust/source/anchors/` and running
+`update-ca-trust force-enable && update-ca-trust extract` (NOTE: this requires
+the `ca-certificates` package to be installed).
+
+#### Debian Stretch
+
+Custom CA certificates can be installed on Debian Stretch by adding the
+certificate file(s) in question to `/usr/local/share/ca-certificates/*.crt` and
+running `update-ca-certificates` (NOTE: this requires the `ca-certificates`
+package to be installed, and the certificate files must use the `.crt` file
+extension).
+
 ## TODO
 
 This guide is a work in progress. It will be updated with the following
@@ -163,4 +227,6 @@ instructions:
 - [ ] How to package Nagios Perl scripts/plugins as Sensu Assets
 - [ ] How to package Nagios Python scripts/plugins as Sensu Assets
 - [ ] How to "self host" custom assets using NGINX
-- [ ] How to configure your first Sensu Handler (e.g. PagerDuty) 
+- [ ] How to configure your first Sensu Handler (e.g. PagerDuty)
+- [ ] How to install custom CA certificates (volume mount Kubernetes Secret);
+      see `entrypoint.sh` (WIP)
