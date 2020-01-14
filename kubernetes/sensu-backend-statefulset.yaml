@@ -39,7 +39,7 @@ spec:
       - name: sensu-backend
         image: sensu/sensu:5.16.1
         command: [
-          "/opt/sensu/bin/sensu-backend", "start",
+          "sensu-backend", "start",
           "--log-level=debug",
           "--cache-dir=/var/cache/sensu/sensu-backend",
           "--state-dir=/var/lib/sensu",
