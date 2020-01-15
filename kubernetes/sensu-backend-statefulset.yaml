@@ -39,7 +39,7 @@ spec:
       - name: sensu-backend
         image: sensu/sensu:5.16.1
         command: [
-          "/opt/sensu/bin/sensu-backend", "start",
+          "sensu-backend", "start",
           "--log-level=debug",
           "--cache-dir=/var/cache/sensu/sensu-backend",
           "--state-dir=/var/lib/sensu",
@@ -79,18 +79,18 @@ spec:
           subPath: sensu-ca-cert
         resources:
           requests:
+            memory: 1024M
+            cpu: 0.3
+          limits:
             memory: 2048M
             cpu: 1.0
-          limits:
-            memory: 4096M
-            cpu: 2.0
 
       - name: sensu-agent
         image: sensu/sensu:5.16.1
         command: ["/opt/sensu/bin/sensu-agent", "start", "--log-level=debug", "--insecure-skip-tls-verify"]
         env:
         - name: SENSU_BACKEND_URL
-          value: wss://sensu-backend-0.sensu.sensu-system.svc.cluster.local:8081 wss://sensu-backend-1.sensu.sensu-system.svc.cluster.local:8081 wss://sensu-backend-2.sensu.sensu-system.svc.cluster.local:8081
+          value: ws://sensu-backend-0.sensu.sensu-system.svc.cluster.local:8081 ws://sensu-backend-1.sensu.sensu-system.svc.cluster.local:8081 ws://sensu-backend-2.sensu.sensu-system.svc.cluster.local:8081
         - name: SENSU_NAMESPACE
           value: sensu-system
         - name: SENSU_SUBSCRIPTIONS
