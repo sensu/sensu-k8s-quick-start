@@ -38,7 +38,7 @@ update_ca_trust_store() {
           return 1
         fi
         ;;
-      centos)
+      centos|"red hat")
         if $(command -v update-ca-trust); then
           update-ca-trust force-enable
           update-ca-trust extract
@@ -59,7 +59,7 @@ update_ca_trust_store() {
 
 # detect platform and update CA trust store
 if OS=$(which_linux_distro); then
-  if (update_ca_trust_store ${OS}); then
+  if (update_ca_trust_store "${OS}"); then
     echo "INFO: CA Trust Store updated successfully!"
   else
     echo "INFO: Unable to update CA Trust Store (continuing)"
