@@ -53,6 +53,7 @@ spec:
     targetPort: 3000
 
 ---
+# standalone etcd w/ sensu-agent sidecar
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -179,6 +180,7 @@ spec:
         ports: []
 
 ---
+# sensu-backend cluster w/ sensu-agent sidecars
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -303,6 +305,7 @@ spec:
         ports: []
 
 ---
+# sensu-backend cluster initialization
 apiVersion: batch/v1
 kind: Job
 metadata:
