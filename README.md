@@ -72,7 +72,7 @@ _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information
 
 ## Monitor Kubernetes workloads using a Sensu Agent sidecar
    
-2. **Configure Sensu agent sidecar.**
+1. **Configure Sensu agent sidecar.**
 
    Deploy an example application with a Sensu Agent sidecar. 
    The attached example uses an NGINX container as a generic web service deployment with a Sensu Agent sidecar.
@@ -88,7 +88,7 @@ _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information
 
    _NOTE: see `kubernetes/example-nginx-deployment.yaml` for more information on how to configure a Sensu Agent sidecar._
 
-3. **Configure monitoring check w/ Nagios plugins.**
+1. **Configure monitoring check w/ Nagios plugins.**
 
    Use `sensuctl` to configure a monitoring check using a Nagios C plugin:
 
@@ -107,6 +107,9 @@ _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information
    Now visit your Sensu dashboard to see the results!
 
    [4]: https://docs.sensu.io/sensu-go/latest/reference/assets/
+
+
+## Customization & Troubleshooting
 
 ## Roll your own Sensu Agent sidecar container images
 
@@ -166,8 +169,6 @@ If your organization requires all containers to share a standard base image (e.g
    Please consult your container registry documentation on how to proceed.
 
    [4]: https://hub.docker.com/r/sensu/sensu/
-
-## Troubleshooting
 
 ### Install custom CA certificates for private Sensu Asset servers
 
