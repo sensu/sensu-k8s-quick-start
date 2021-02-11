@@ -29,7 +29,7 @@ spec:
   ports: []
     
 ---
-# load balancer for sensu-backends (web + API + transport)
+# load balancer for cluster-external access to sensu-backends (web + API + transport)
 apiVersion: v1
 kind: Service
 metadata:
