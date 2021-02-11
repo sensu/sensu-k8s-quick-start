@@ -10,11 +10,11 @@ _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information
 Contents: 
 
 - [Deploy Sensu](#deploy-sensu)
-- [Monitor Kubernetes workloads using a Sensu Agent sidecar]()
-- [Customization and troubleshooting]()
-- [Roll your own Sensu Agent sidecar container images]()
-- [Install custom CA certificates for private Sensu Asset servers]()
-- [Use SSD persistent disks for Etcd]()
+- [Monitor Kubernetes workloads using a Sensu Agent sidecar](#monitor-kubernetes-workloads-using-a-sensu-agent-sidecar)
+- [Customization and troubleshooting](#customization-and-troubleshooting)
+  - [Roll your own Sensu Agent sidecar container images](#roll-your-own-sensu-agent-sidecar-container-images)
+  - [Install custom CA certificates for private Sensu Asset servers](#install-custom-ca-certificates-for-private-sensu-asset-servers)
+  - [Use SSD persistent disks for Etcd](#use-ssd-persistent-disks-for-etcd)
 
 ## Deploy Sensu 
 
