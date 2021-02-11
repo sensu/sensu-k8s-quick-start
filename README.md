@@ -7,6 +7,15 @@ It also includes configuration to reuse Nagios-style monitoring checks to monito
 
 _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information._
 
+Contents: 
+
+- [Deploy Sensu](#deploy-sensu)
+- [Monitor Kubernetes workloads using a Sensu Agent sidecar]()
+- [Customization and troubleshooting]()
+- [Roll your own Sensu Agent sidecar container images]()
+- [Install custom CA certificates for private Sensu Asset servers]()
+- [Use SSD persistent disks for Etcd]()
+
 ## Deploy Sensu 
 
 1. **Deploy a Sensu staging environment (Kubernetes Statefulset).**
@@ -109,7 +118,7 @@ _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information
    [4]: https://docs.sensu.io/sensu-go/latest/reference/assets/
 
 
-## Customization & Troubleshooting
+## Customization and troubleshooting
 
 ## Roll your own Sensu Agent sidecar container images
 
