@@ -7,9 +7,9 @@ It also includes configuration to reuse Nagios-style monitoring checks to monito
 
 _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information._
 
-## Setup
+## Deploy Sensu 
 
-1. **Deploy Sensu staging environment (Kubernetes Statefulset).**
+1. **Deploy a Sensu staging environment (Kubernetes Statefulset).**
 
    Create a Sensu namespace and deploy a Sensu cluster using `kubectl`:
 
@@ -26,7 +26,7 @@ _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information
 
 	 _NOTE: This will spin up three `sensu-backend-X` pods, it may take a couple moments..._
 
-2. **Verify your Sensu staging environment, and configure `sensuctl`**.
+1. **Verify your Sensu staging environment**.
 
    Obtain the Sensu backend load balancer IP address using `kubectl`:
 
@@ -43,15 +43,20 @@ _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information
    Sensu does not use a default username and password – cluster administrator access credentials are configured during cluster initialization (see [`sensu-backend init`][backend-init]). 
    If you have not modified the Kubernetes Batch Job provided in `kubernetes/sensu-backend.yaml`, the cluster admin username is `sensu` and the password is `sensu`.
 
-   You can also now configure `sensuctl` using this IP address.
+1. **Download and configure `sensuctl`**.
+   
+   Please visit https://sensu.io/downloads to download the Sensu CLI (`sensuctl`) for your workstation.
+
+   Once installed, you may configure `sensuctl` using this IP address you obtained in the previous step.
    
    ```shell
    $ sensuctl configure
+   ? Authentication method: username/password
    ? Sensu Backend URL: http://123.123.123.123:8080
-   ? Username: admin
-   ? Password: *********
    ? Namespace: default
    ? Preferred output format: tabular
+   ? Username: sensu
+   ? Password: *****
    ```
 
    To test your `sensuctl` configuration, run the following command:
@@ -65,6 +70,8 @@ _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information
    
    [backend-init]: https://docs.sensu.io/sensu-go/latest/observability-pipeline/observe-schedule/backend/#initialization
 
+## Monitor Kubernetes workloads using a Sensu Agent sidecar
+   
 2. **Configure Sensu agent sidecar.**
 
    Deploy an example application with a Sensu Agent sidecar. 
@@ -101,7 +108,7 @@ _NOTE: this guide is a work in progress; see [#TODO](#todo) for more information
 
    [4]: https://docs.sensu.io/sensu-go/latest/reference/assets/
 
-## Roll your own Sensu Agent sidecar containers
+## Roll your own Sensu Agent sidecar container images
 
 The official Sensu Docker images are based on Alpine Linux. 
 If your organization requires all containers to share a standard base image (e.g. RHEL), the following instructions will help you get started building custom Sensu Go agent images. 
