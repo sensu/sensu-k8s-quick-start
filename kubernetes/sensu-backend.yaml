@@ -1,0 +1,342 @@
+---
+# headless service for sensu-etcd statefulset DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: sensu-etcd
+spec:
+  selector:
+    app: sensu-etcd
+  clusterIP: None
+  ports:
+  - name: sensu-etcd-client
+    protocol: TCP
+    port: 2379
+  - name: sensu-etcd-server
+    protocol: TCP
+    port: 2380
+
+---
+# headless service for sensu-backend statefulset DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: sensu
+spec:
+  selector:
+    app: sensu
+  clusterIP: None
+  ports: []
+    
+---
+# load balancer for cluster-external access to sensu-backends (web + API + transport)
+apiVersion: v1
+kind: Service
+metadata:
+  name: sensu-lb
+spec:
+  selector:
+    app: sensu
+  type: LoadBalancer
+  ports:
+  - name: sensu-api
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
+  - name: sensu-transport
+    protocol: TCP
+    port: 8081
+    targetPort: 8081
+  - name: sensu-webui
+    protocol: TCP
+    port: 80
+    targetPort: 3000
+
+---
+# standalone etcd w/ sensu-agent sidecar
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sensu-etcd
+spec:
+  selector:
+    matchLabels:
+      app: sensu-etcd
+  serviceName: sensu-etcd
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - metadata:
+      name: sensu-etcd
+    spec:
+      # storageClassName: faster 
+      accessModes:
+        - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: 20Gi
+  template:
+    metadata:
+      labels:
+        app: sensu-etcd
+    spec:
+      terminationGracePeriodSeconds: 60
+      volumes:
+      - name: sensu-etcd
+        persistentVolumeClaim:
+          claimName: sensu-etcd
+      - name: sensu-asset-server-ca-cert
+        secret:
+          secretName: sensu-asset-server-ca-cert
+          defaultMode: 256
+          optional: true
+      containers:
+      - name: etcd
+        image: gcr.io/etcd-development/etcd:v3.3.22
+        command: [
+          "/usr/local/bin/etcd",
+          "--data-dir", "/var/lib/etcd",
+          "--initial-cluster-state", "new",
+          "--name", "$(ETCD_NAME)",
+          "--listen-client-urls", "http://0.0.0.0:2379",
+          "--advertise-client-urls", "http://$(ETCD_NAME):2379",
+        ]
+        env:
+        - name: KUBE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ETCD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: sensu-etcd
+          mountPath: /var/lib/etcd
+        ports:
+        - protocol: TCP
+          containerPort: 2379
+        - protocol: TCP
+          containerPort: 2380
+        resources:
+          requests:
+            memory: 2048M
+            cpu: 1.0
+          limits:
+            memory: 4096M
+            cpu: 2.0
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          exec:
+            command:
+            - wget 
+            - --no-check-certificate
+            - -q
+            - -O-
+            - http://127.0.0.1:2379/health
+
+      - name: sensu-agent
+        image: sensu/sensu:6.2.5
+        command: [
+          "/opt/sensu/bin/sensu-agent", "start", 
+          "--log-level", "warn",
+        ]
+        env:
+        - name: KUBE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SENSU_BACKEND_URL
+          value: "ws://sensu-backend-0.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081 ws://sensu-backend-1.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081 ws://sensu-backend-2.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081"
+        - name: SENSU_NAMESPACE
+          value: "sensu-system"
+        - name: SENSU_SUBSCRIPTIONS
+          value: "sensu-backend kubernetes"
+        - name: SENSU_DETECT_CLOUD_PROVIDER
+          value: "true"
+        - name: SENSU_KEEPALIVE_INTERVAL
+          value: "5"
+        - name: SENSU_KEEPALIVE_WARNING_TIMEOUT
+          value: "10"
+        - name: SENSU_DEREGISTER
+          value: "true"
+        - name: SENSU_DEREGISTRATION_HANDLER
+          value: "deregister"
+        - name: SENSU_API_HOST
+          value: "127.0.0.1"
+        - name: SENSU_API_PORT
+          value: "3031"
+        - name: SENSU_STATSD_METRICS_HOST
+          value: "127.0.0.1"
+        - name: SENSU_STATSD_METRICS_PORT
+          value: "8125"
+        - name: SENSU_STATSD_FLUSH_INTERVAL
+          value: "10"
+        - name: SENSU_STATSD_EVENT_HANDLERS
+          value: "statsd"
+        volumeMounts: []
+        ports: []
+
+---
+# sensu-backend cluster w/ sensu-agent sidecars
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sensu-backend
+spec:
+  selector:
+    matchLabels:
+      app: sensu
+  serviceName: sensu
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: sensu
+    spec:
+      volumes:
+      - name: sensu-asset-server-ca-cert
+        secret:
+          secretName: sensu-asset-server-ca-cert
+          defaultMode: 256
+          optional: true
+      initContainers:
+      - name: wait-for-etcd
+        image: busybox:latest
+        command: [
+          "sh",
+          "-c",
+          "until nslookup sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local; do echo waiting for sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local; sleep 2; done",
+        ]
+        env:
+        - name: KUBE_NAMESPACE
+          valueFrom: 
+            fieldRef: 
+              fieldPath: metadata.namespace
+      containers:
+      - name: sensu-backend
+        image: sensu/sensu:6.2.5
+        command: [
+          "/opt/sensu/bin/sensu-backend", "start",
+          "--log-level", "debug",
+          "--debug", "true",
+          "--no-embed-etcd",
+          "--etcd-client-urls", "http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379",
+          "--etcd-name", "sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local",
+        ]
+        env:
+        - name: KUBE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts: []
+        ports:
+        - protocol: TCP
+          containerPort: 8080
+        - protocol: TCP
+          containerPort: 8081
+        - protocol: TCP
+          containerPort: 3000
+        resources:
+          requests:
+            memory: 2048M
+            cpu: 1.0
+          limits:
+            memory: 4096M
+            cpu: 2.0
+        # readinessProbe:
+        #   initialDelaySeconds: 5
+        #   periodSeconds: 5
+        #   exec:
+        #     command:
+        #     - wget 
+        #     - --no-check-certificate
+        #     - -q
+        #     - -O-
+        #     - https://127.0.0.1:8080/health
+
+      - name: sensu-agent
+        image: sensu/sensu:6.2.5
+        command: [
+          "/opt/sensu/bin/sensu-agent", "start", 
+          "--detect-cloud-provider", "true",
+          "--log-level", "warn", 
+        ]
+        env:
+        - name: KUBE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SENSU_BACKEND_URL
+          value: "ws://sensu-backend-0.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081 ws://sensu-backend-1.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081 ws://sensu-backend-2.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081"
+        - name: SENSU_NAMESPACE
+          value: "sensu-system"
+        - name: SENSU_SUBSCRIPTIONS
+          value: "sensu-backend kubernetes"
+        - name: SENSU_KEEPALIVE_INTERVAL
+          value: "5"
+        - name: SENSU_KEEPALIVE_WARNING_TIMEOUT
+          value: "10"
+        - name: SENSU_DEREGISTER
+          value: "true"
+        - name: SENSU_DEREGISTRATION_HANDLER
+          value: "deregister"
+        - name: SENSU_API_HOST
+          value: "127.0.0.1"
+        - name: SENSU_API_PORT
+          value: "3031"
+        - name: SENSU_STATSD_METRICS_HOST
+          value: "127.0.0.1"
+        - name: SENSU_STATSD_METRICS_PORT
+          value: "8125"
+        - name: SENSU_STATSD_FLUSH_INTERVAL
+          value: "10"
+        - name: SENSU_STATSD_EVENT_HANDLERS
+          value: "statsd"
+        volumeMounts: []
+        ports: []
+
+---
+# sensu-backend cluster initialization
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sensu-backend-init
+spec:
+  parallelism: 1
+  completions: 1
+  backoffLimit: 5
+  template:
+    spec:
+      activeDeadlineSeconds: 60
+      containers:
+      - name: sensu-backend-init
+        image: sensu/sensu:6.2.5
+        command: [
+          "/opt/sensu/bin/sensu-backend", "init",
+          "--etcd-client-urls", "http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379",
+          # "/bin/sh", 
+          # "-c", 
+          # "sleep 30 && sensu-backend init --etcd-client-urls=http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379",
+        ]
+        env:
+        - name: KUBE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SENSU_BACKEND_CLUSTER_ADMIN_USERNAME
+          value: sensu
+        - name: SENSU_BACKEND_CLUSTER_ADMIN_PASSWORD
+          value: sensu
+        volumeMounts: []
+        ports: []
+      restartPolicy: Never
+
