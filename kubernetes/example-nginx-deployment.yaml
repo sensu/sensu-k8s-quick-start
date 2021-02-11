@@ -80,30 +80,42 @@ spec:
         - name: nginx-config
           mountPath: /etc/nginx/nginx.conf
           subPath: nginx.conf
+
       - name: sensu-agent
         image: sensu/sensu:6.2.5
-        command: ["/opt/sensu/bin/sensu-agent", "start", "--log-level", "debug"]
+        command: [
+          "/opt/sensu/bin/sensu-agent", "start", 
+          "--detect-cloud-provider", "true",
+          "--log-level", "warn", 
+        ]
         env:
-          - name: SENSU_BACKEND_URL
-            value: ws://sensu-backend-0.sensu.sensu-system.svc.cluster.local:8081 ws://sensu-backend-1.sensu.sensu-system.svc.cluster.local:8081 ws://sensu-backend-2.sensu.sensu-system.svc.cluster.local:8081
-          - name: SENSU_NAMESPACE
-            value: default
-          - name: SENSU_SUBSCRIPTIONS
-            value: nginx
-          - name: SENSU_KEEPALIVE_INTERVAL
-            value: "5"
-          - name: SENSU_KEEPALIVE_WARNING_TIMEOUT
-            value: "10"
-          - name: SENSU_KEEPALIVE_CRITICAL_TIMEOUT
-            value: "60"
-          - name: SENSU_DEREGISTER
-            value: "true"
-          - name: SENSU_STATSD_EVENT_HANDLERS
-            value: statsd
-        volumeMounts:
-        - name: sensu-asset-server-ca-cert
-          mountPath: /etc/pki/ca-trust/source/anchors/sensu-ca-cert.pem # centos
-          subPath: sensu-ca-cert.pem
-        - name: sensu-asset-server-ca-cert
-          mountPath: /usr/local/share/ca-certificates/sensu-ca-cert.crt # alpine/debian
-          subPath: sensu-ca-cert
+        - name: KUBE_NAMESPACE # Kubernetes namespace where Sensu backend is deployed
+          value: "sensu-system" 
+        - name: SENSU_BACKEND_URL
+          value: "ws://sensu-backend-0.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081 ws://sensu-backend-1.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081 ws://sensu-backend-2.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081"
+        - name: SENSU_NAMESPACE
+          value: "sensu-system"
+        - name: SENSU_SUBSCRIPTIONS
+          value: "sensu-backend kubernetes"
+        - name: SENSU_KEEPALIVE_INTERVAL
+          value: "5"
+        - name: SENSU_KEEPALIVE_WARNING_TIMEOUT
+          value: "10"
+        - name: SENSU_DEREGISTER
+          value: "true"
+        - name: SENSU_DEREGISTRATION_HANDLER
+          value: "deregister"
+        - name: SENSU_API_HOST
+          value: "127.0.0.1"
+        - name: SENSU_API_PORT
+          value: "3031"
+        - name: SENSU_STATSD_METRICS_HOST
+          value: "127.0.0.1"
+        - name: SENSU_STATSD_METRICS_PORT
+          value: "8125"
+        - name: SENSU_STATSD_FLUSH_INTERVAL
+          value: "10"
+        - name: SENSU_STATSD_EVENT_HANDLERS
+          value: "statsd"
+        volumeMounts: []
+        ports: []

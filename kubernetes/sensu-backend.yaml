@@ -69,6 +69,11 @@ spec:
       - name: sensu-etcd
         persistentVolumeClaim:
           claimName: sensu-etcd
+      - name: sensu-asset-server-ca-cert
+        secret:
+          secretName: sensu-asset-server-ca-cert
+          defaultMode: 256
+          optional: true
       containers:
       - name: etcd
         image: gcr.io/etcd-development/etcd:v3.3.22
@@ -175,7 +180,12 @@ spec:
       labels:
         app: sensu
     spec:
-      volumes: []
+      volumes:
+      - name: sensu-asset-server-ca-cert
+        secret:
+          secretName: sensu-asset-server-ca-cert
+          defaultMode: 256
+          optional: true
       initContainers:
       - name: wait-for-etcd
         image: busybox:latest
