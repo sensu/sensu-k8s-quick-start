@@ -81,7 +81,7 @@ spec:
           mountPath: /etc/nginx/nginx.conf
           subPath: nginx.conf
       - name: sensu-agent
-        image: sensu/sensu:5.16.1
+        image: sensu/sensu:6.2.5
         command: ["/opt/sensu/bin/sensu-agent", "start", "--log-level", "debug"]
         env:
           - name: SENSU_BACKEND_URL
