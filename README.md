@@ -27,13 +27,14 @@ information._
    statefulset.apps/sensu-backend created
    ```
 
+	 _NOTE: This will spin up three `sensu-backend-X` pods, it may take a couple moments..._
+
 2. **Verify your Sensu staging environment, and configure `sensuctl`**.
 
    Obtain the Sensu backend load balancer IP address using `kubectl`:
 
    ```shell
    $ kubectl --namespace sensu-system get services
-   $ kubectl get services --namespace sensu-system
    NAME       TYPE           CLUSTER-IP     EXTERNAL-IP       PORT(S)                                      AGE
    sensu      ClusterIP      None           <none>            2379/TCP,2380/TCP                            48m
    sensu-lb   LoadBalancer   10.100.10.49   123.123.123.123   8080:30487/TCP,8081:30991/TCP,80:32339/TCP   48m
@@ -44,7 +45,10 @@ information._
 
    You should be able to visit the Sensu dashboard via the Sensu backend load
    balance IP address, as obtained above (e.g. http://123.123.123.123). You can
-   also now configure `sensuctl` using this IP address.
+   also now configure `sensuctl` using this IP address. The default user name and
+	 password are: `admin`/`P@ssw0rd!`
+
+	 If you haven't installed the `sensu-cli`, go to this [link](https://docs.sensu.io/sensu-go/latest/operations/deploy-sensu/install-sensu/#install-sensuctl).
 
    ```shell
    $ sensuctl configure
