@@ -269,16 +269,16 @@ spec:
           limits:
             memory: 4096M
             cpu: 2.0
-        # readinessProbe:
-        #   initialDelaySeconds: 5
-        #   periodSeconds: 5
-        #   exec:
-        #     command:
-        #     - wget 
-        #     - --no-check-certificate
-        #     - -q
-        #     - -O-
-        #     - https://127.0.0.1:8080/health
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          exec:
+            command:
+            - wget 
+            - --no-check-certificate
+            - -q
+            - -O-
+            - http://127.0.0.1:8080/health
 
       - name: sensu-agent
         image: sensu/sensu:6.2.5
