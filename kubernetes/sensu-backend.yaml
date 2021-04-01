@@ -27,7 +27,7 @@ spec:
     app: sensu
   clusterIP: None
   ports: []
-    
+
 ---
 # load balancer for cluster-external access to sensu-backends (web + API + transport)
 apiVersion: v1
@@ -70,7 +70,7 @@ spec:
   - metadata:
       name: sensu-etcd
     spec:
-      # storageClassName: faster 
+      # storageClassName: faster
       accessModes:
         - "ReadWriteOnce"
       resources:
@@ -131,7 +131,7 @@ spec:
           periodSeconds: 5
           exec:
             command:
-            - wget 
+            - wget
             - --no-check-certificate
             - -q
             - -O-
@@ -140,7 +140,7 @@ spec:
       - name: sensu-agent
         image: sensu/sensu:6.2.5
         command: [
-          "/opt/sensu/bin/sensu-agent", "start", 
+          "/opt/sensu/bin/sensu-agent", "start",
           "--log-level", "warn",
         ]
         env:
@@ -214,18 +214,18 @@ spec:
         ]
         env:
         - name: KUBE_NAMESPACE
-          valueFrom: 
-            fieldRef: 
+          valueFrom:
+            fieldRef:
               fieldPath: metadata.namespace
       initContainers:
       - name: wait-for-etcd
         image: tutum/dnsutils:latest
         command: [
-          "/bin/sh", 
+          "/bin/sh",
           "-c",
           "export READY=1 && while [ $READY -gt 0 ]; do host $(TARGET_DNS); READY=$?; sleep 2; done;",
         ]
-        env: 
+        env:
         - name: KUBE_NAMESPACE
           valueFrom:
             fieldRef:
@@ -274,7 +274,7 @@ spec:
           periodSeconds: 5
           exec:
             command:
-            - wget 
+            - wget
             - --no-check-certificate
             - -q
             - -O-
@@ -283,9 +283,9 @@ spec:
       - name: sensu-agent
         image: sensu/sensu:6.2.5
         command: [
-          "/opt/sensu/bin/sensu-agent", "start", 
+          "/opt/sensu/bin/sensu-agent", "start",
           "--detect-cloud-provider", "true",
-          "--log-level", "warn", 
+          "--log-level", "warn",
         ]
         env:
         - name: KUBE_NAMESPACE
@@ -323,6 +323,14 @@ spec:
 
 ---
 # sensu-backend cluster initialization
+#
+# NOTE: the first few init jobs should fail (during cluster initialization), but
+# one will eventually succeed. A future improvement to the `sensu-backend init`
+# command will improve the reliability of cluster initialization such that K8s
+# Job-based initialization will become more reliable and idempotent. In the interim,
+# an alternative/workaround solution is also provided as a commented set of commands.
+# To use this alternative initialization workflow, comment out or delete the
+# `sensu-backend init` command(s) and uncomment the sleep-based command(s).
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -340,8 +348,8 @@ spec:
         command: [
           "/opt/sensu/bin/sensu-backend", "init",
           "--etcd-client-urls", "http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379",
-          # "/bin/sh", 
-          # "-c", 
+          # "/bin/sh",
+          # "-c",
           # "sleep 30 && sensu-backend init --etcd-client-urls=http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379",
         ]
         env:
