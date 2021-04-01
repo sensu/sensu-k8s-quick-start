@@ -1,0 +1,83 @@
+---
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: sensu-agent
+spec:
+  minReadySeconds: 10
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: sensu-agent
+  template:
+    metadata:
+      labels:
+        app: sensu-agent
+    spec:
+      tolerations: []
+      terminationGracePeriodSeconds: 30
+      hostPID: true
+      hostIPC: true
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      volumes: []
+      containers:
+      - name: sensu-agent
+        image: sensu/sensu:6.2.5
+        command: [
+          "/opt/sensu/bin/sensu-agent", "start",
+          "--detect-cloud-provider", "true",
+          "--log-level", "debug",
+        ]
+        env:
+        - name: KUBELET_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: KUBE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SENSU_BACKEND_URL
+          value: "ws://sensu-backend-0.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081 ws://sensu-backend-1.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081 ws://sensu-backend-2.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081"
+        - name: SENSU_NAMESPACE
+          value: "sensu-system"
+        - name: SENSU_SUBSCRIPTIONS
+          value: "kubernetes daemonset"
+        - name: SENSU_KEEPALIVE_INTERVAL
+          value: "5"
+        - name: SENSU_KEEPALIVE_WARNING_TIMEOUT
+          value: "10"
+        - name: SENSU_DEREGISTER
+          value: "true"
+        - name: SENSU_DEREGISTRATION_HANDLER
+          value: "deregister"
+        - name: SENSU_API_HOST
+          value: "127.0.0.1"
+        - name: SENSU_API_PORT
+          value: "3031"
+        - name: SENSU_STATSD_METRICS_HOST
+          value: "127.0.0.1"
+        - name: SENSU_STATSD_METRICS_PORT
+          value: "8125"
+        - name: SENSU_STATSD_FLUSH_INTERVAL
+          value: "10"
+        - name: SENSU_STATSD_EVENT_HANDLERS
+          value: "statsd"
+        ports:
+        - containerPort: 3030
+          hostPort: 3030
+          protocol: TCP
+        - containerPort: 3031
+          hostPort: 3031
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 1.0
+            memory: 1024M
+          requests:
+            cpu: 0.5
+            memory: 256M
