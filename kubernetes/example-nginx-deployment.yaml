@@ -53,7 +53,7 @@ spec:
   selector:
     matchLabels:
       app: nginx
-  replicas: 2
+  replicas: 3
   template:
     metadata:
       name: nginx
@@ -84,17 +84,19 @@ spec:
       - name: sensu-agent
         image: sensu/sensu:6.2.5
         command: [
-          "/opt/sensu/bin/sensu-agent", "start", 
+          "/opt/sensu/bin/sensu-agent", "start",
           "--detect-cloud-provider", "true",
-          "--log-level", "warn", 
+          "--log-level", "warn",
         ]
         env:
         - name: KUBE_NAMESPACE # Kubernetes namespace where Sensu backend is deployed
-          value: "sensu-system" 
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: SENSU_BACKEND_URL
           value: "ws://sensu-backend-0.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081 ws://sensu-backend-1.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081 ws://sensu-backend-2.sensu.$(KUBE_NAMESPACE).svc.cluster.local:8081"
         - name: SENSU_NAMESPACE
-          value: "sensu-system"
+          value: "$(KUBE_NAMESPACE)"
         - name: SENSU_SUBSCRIPTIONS
           value: "sensu-backend kubernetes"
         - name: SENSU_KEEPALIVE_INTERVAL
