@@ -158,7 +158,7 @@ If your organization requires all containers to share a standard base image (e.g
    ```shell
    $ SENSU_VERSION=6.2.5 && docker tag sensu-agent:${SENSU_VERSION}-el6 your-repository.com/sensu-agent:${SENSU_VERSION}-el6
    $ SENSU_VERSION=6.2.5 && docker push your-repository.com/sensu-agent:${SENSU_VERSION}-el6
-   $ SENSU_VERSION=6.2.5 && docker tag sensu-agent:${SENSU_VERSION}-el6 your-repository.com/sensu-agent:${SENSU_VERSION}-el7
+   $ SENSU_VERSION=6.2.5 && docker tag sensu-agent:${SENSU_VERSION}-el7 your-repository.com/sensu-agent:${SENSU_VERSION}-el7
    $ SENSU_VERSION=6.2.5 && docker push your-repository.com/sensu-agent:${SENSU_VERSION}-el7
    ```
 
