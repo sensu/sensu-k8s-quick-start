@@ -138,7 +138,7 @@ spec:
             - http://127.0.0.1:2379/health
 
       - name: sensu-agent
-        image: sensu/sensu:6.2.5
+        image: sensu/sensu:6.7.2
         command: [
           "/opt/sensu/bin/sensu-agent", "start",
           "--log-level", "warn",
@@ -236,12 +236,15 @@ spec:
         volumeMounts: []
       containers:
       - name: sensu-backend
-        image: sensu/sensu:6.2.5
+        image: sensu/sensu:6.7.2
         command: [
           "/opt/sensu/bin/sensu-backend", "start",
           "--log-level", "debug",
           "--debug", "true",
           "--no-embed-etcd",
+          "--api-listen-address", "0.0.0.0:8080",
+          "--agent-host", "0.0.0.0",
+          "--dashboard-host", "0.0.0.0",
           "--etcd-client-urls", "http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379",
           "--etcd-name", "sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local",
         ]
@@ -270,18 +273,18 @@ spec:
             memory: 4096M
             cpu: 2.0
         readinessProbe:
-          initialDelaySeconds: 5
-          periodSeconds: 5
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 20
           exec:
             command:
             - wget
-            - --no-check-certificate
             - -q
             - -O-
-            - http://127.0.0.1:8080/health
+            - http://localhost:8080/health
 
       - name: sensu-agent
-        image: sensu/sensu:6.2.5
+        image: sensu/sensu:6.7.2
         command: [
           "/opt/sensu/bin/sensu-agent", "start",
           "--detect-cloud-provider", "true",
@@ -338,19 +341,20 @@ metadata:
 spec:
   parallelism: 1
   completions: 1
-  backoffLimit: 5
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 100
   template:
     spec:
       activeDeadlineSeconds: 60
       containers:
       - name: sensu-backend-init
-        image: sensu/sensu:6.2.5
+        image: sensu/sensu:6.7.2
         command: [
           "/opt/sensu/bin/sensu-backend", "init",
           "--etcd-client-urls", "http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379",
-          # "/bin/sh",
-          # "-c",
-          # "sleep 30 && sensu-backend init --etcd-client-urls=http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379",
+          #"/bin/sh",
+          #"-c",
+          #'sleep 30 && sensu-backend init --etcd-client-urls=http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379',
         ]
         env:
         - name: KUBE_NAMESPACE
