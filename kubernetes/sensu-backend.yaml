@@ -242,9 +242,6 @@ spec:
           "--log-level", "debug",
           "--debug", "true",
           "--no-embed-etcd",
-          "--api-listen-address", "0.0.0.0:8080",
-          "--agent-host", "0.0.0.0",
-          "--dashboard-host", "0.0.0.0",
           "--etcd-client-urls", "http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379",
           "--etcd-name", "sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local",
         ]
