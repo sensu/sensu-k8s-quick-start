@@ -278,7 +278,7 @@ spec:
             - wget
             - -q
             - -O-
-            - http://localhost:8080/health
+            - http://127.0.0.1:8080/health
 
       - name: sensu-agent
         image: sensu/sensu:6.7.2
