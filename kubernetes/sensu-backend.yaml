@@ -100,6 +100,7 @@ spec:
           "--initial-cluster-state", "new",
           "--name", "$(ETCD_NAME)",
           "--listen-client-urls", "http://0.0.0.0:2379",
+          "--election-timeout=50000",
           "--advertise-client-urls", "http://$(ETCD_NAME):2379",
         ]
         env:
@@ -206,24 +207,11 @@ spec:
           optional: true
       initContainers:
       - name: wait-for-etcd
-        image: busybox:latest
-        command: [
-          "sh",
-          "-c",
-          "until nslookup sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local; do echo waiting for sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local; sleep 2; done",
-        ]
-        env:
-        - name: KUBE_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-      initContainers:
-      - name: wait-for-etcd
         image: tutum/dnsutils:latest
         command: [
           "/bin/sh",
           "-c",
-          "export READY=1 && while [ $READY -gt 0 ]; do host $(TARGET_DNS); READY=$?; sleep 2; done;",
+          "export READY=1 && while [ $READY -gt 0 ]; do host ${TARGET_DNS}; READY=$?; sleep 2; done && sleep 10",
         ]
         env:
         - name: KUBE_NAMESPACE
@@ -343,11 +331,30 @@ spec:
   template:
     spec:
       activeDeadlineSeconds: 60
+      initContainers:
+      - name: wait-for-etcd
+        image: tutum/dnsutils:latest
+        command: [
+          "/bin/sh",
+          "-c",
+          "export READY=1 && while [ $READY -gt 0 ]; do host ${TARGET_DNS}; READY=$?; sleep 2; done && sleep 10",
+        ]
+        env:
+        - name: KUBE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: TARGET_DNS
+          value: "sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local"
+        ports: []
+        volumeMounts: []
       containers:
       - name: sensu-backend-init
         image: sensu/sensu:6.7.2
         command: [
           "/opt/sensu/bin/sensu-backend", "init",
+          "--wait",
+          "--timeout", "120s",
           "--etcd-client-urls", "http://sensu-etcd-0.sensu-etcd.$(KUBE_NAMESPACE).svc.cluster.local:2379",
           #"/bin/sh",
           #"-c",
